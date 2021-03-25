@@ -3,9 +3,12 @@ package golang
 import (
 	"regexp"
 	"strings"
+
+	"golang.org/x/text/unicode/runenames"
 )
 
 var IdentPattern = regexp.MustCompile("[^a-zA-Z0-9_]+")
+var SeparatorPattern = regexp.MustCompile("([^a-zA-Z0-9]+)[-:/]+([^a-zA-Z0-9]+)")
 
 type Constant struct {
 	Name  string
@@ -20,9 +23,17 @@ type Enum struct {
 }
 
 func EnumReplace(value string) string {
-	id := strings.Replace(value, "-", "_", -1)
-	id = strings.Replace(id, ":", "_", -1)
-	id = strings.Replace(id, "/", "_", -1)
+
+	id := SeparatorPattern.ReplaceAllString(value, "$1_$2")
+
+	id = IdentPattern.ReplaceAllStringFunc(id, func(s string) string {
+		var replacement string
+		for _, v := range s {
+			replacement += strings.Title(strings.ToLower(runenames.Name(v)))
+		}
+		return replacement
+	})
+
 	return IdentPattern.ReplaceAllString(id, "")
 }
 
